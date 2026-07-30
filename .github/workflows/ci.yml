@@ -19,9 +19,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.10.5'
           # The wrapper breaks exit-code handling in shell loops
@@ -45,13 +45,13 @@ jobs:
   tflint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: terraform-linters/setup-tflint@v6.3.0
         with:
           tflint_version: v0.63.1
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ runner.os }}-${{ hashFiles('.tflint.hcl') }}
@@ -77,7 +77,7 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -90,7 +90,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install terraform-docs
         run: |
