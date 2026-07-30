@@ -39,7 +39,7 @@ AWS の assume role policy（信頼ポリシー）はロール本体と不可分
 
 1. このテンプレートは `create_role = false` のエントリについて、必要な信頼ポリシー JSON を output `gcp_to_aws_required_trust_policies` で提供する。
 2. **ロールの所有側**でこの JSON を信頼ポリシーに設定（マージ）してもらう必要がある。設定されるまで GCP からの AssumeRole は失敗する。
-3. `managed_policy_arns` / `inline_policy_json` のアタッチは既存ロールに対しても本テンプレートが実施する。
+3. `managed_policy_arns` / `inline_policy` のアタッチは既存ロールに対しても本テンプレートが実施する。
 
 ## 変数一覧
 
@@ -55,7 +55,7 @@ AWS の assume role policy（信頼ポリシー）はロール本体と不可分
 | create\_google\_oidc\_provider | accounts.google.com の IAM OIDC プロバイダを作成するか。AWSアカウントに1つしか作れないため、既存がある場合は false にして参照する | `bool` | `true` | no |
 | default\_tags | 全AWSリソースに付与する追加タグ | `map(string)` | `{}` | no |
 | gcp\_project\_id | GCPプロジェクトID。AWS→GCP連携 (aws\_to\_gcp\_service\_accounts) を使用する場合は必須 | `string` | `null` | no |
-| gcp\_to\_aws\_roles | GCPのサービスアカウントに AssumeRoleWithWebIdentity を許可する IAM ロールの定義。キーはロールの識別子 (create\_role = true の場合、ロール名は <system\_name>-<env>-<キー> になる) | <pre>map(object({<br/>    gcp_service_account_unique_ids = list(string)<br/>    create_role                    = optional(bool, true)<br/>    existing_role_name             = optional(string)<br/>    managed_policy_arns            = optional(list(string), [])<br/>    inline_policy_json             = optional(string)<br/>    max_session_duration           = optional(number, 3600)<br/>    audiences                      = optional(list(string))<br/>  }))</pre> | `{}` | no |
+| gcp\_to\_aws\_roles | GCPのサービスアカウントに AssumeRoleWithWebIdentity を許可する IAM ロールの定義。キーはロールの識別子 (create\_role = true の場合、ロール名は <system\_name>-<env>-<キー> になる) | <pre>map(object({<br/>    gcp_service_account_unique_ids = list(string)<br/>    create_role                    = optional(bool, true)<br/>    existing_role_name             = optional(string)<br/>    managed_policy_arns            = optional(list(string), [])<br/>    inline_policy                  = optional(any)<br/>    max_session_duration           = optional(number, 3600)<br/>    audiences                      = optional(list(string))<br/>  }))</pre> | `{}` | no |
 | google\_oidc\_audiences | Google OIDC トークンの audience の既定値。OIDCプロバイダの client\_id\_list と各ロールの信頼条件 (oaud) に使用する | `list(string)` | <pre>[<br/>  "sts.amazonaws.com"<br/>]</pre> | no |
 | region | AWSリージョン | `string` | `"ap-northeast-1"` | no |
 
@@ -82,7 +82,7 @@ AWS の assume role policy（信頼ポリシー）はロール本体と不可分
 | `create_role` | ロールを新規作成するか。false なら既存ロールを参照 | `true` |
 | `existing_role_name` | 既存ロール名（`create_role = false` のとき必須） | `null` |
 | `managed_policy_arns` | アタッチするマネージドポリシー ARN のリスト | `[]` |
-| `inline_policy_json` | アタッチするインラインポリシー JSON | `null` |
+| `inline_policy` | アタッチするインラインポリシー（HCL オブジェクトで記述。モジュールが JSON へ変換する） | `null` |
 | `max_session_duration` | 最大セッション時間（秒、`create_role = true` のみ有効） | `3600` |
 | `audiences` | このロール固有の audience（null なら `google_oidc_audiences`） | `null` |
 

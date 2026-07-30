@@ -1,0 +1,146 @@
+pipeline {
+    agent any
+
+    options {
+        ansiColor('xterm')
+        timeout(time: 2, unit: 'HOURS')
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+
+    parameters {
+        string(name: 'AWS_REGION', defaultValue: 'ap-northeast-1', description: 'AWS Region')
+        string(name: 'AWS_PROFILE', defaultValue: 'default', description: 'AWS CLI Profile Name')
+        string(name: 'BACKEND_STACK_NAME', defaultValue: 'terraform-backend', description: 'CloudFormation Stack Name for Backend')
+        choice(name: 'ENV', choices: ['github'], description: 'IdP スロット (state key に使う)')
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Action')
+    }
+
+    environment {
+        AWS_REGION = "${params.AWS_REGION}"
+        AWS_PROFILE = "${params.AWS_PROFILE}"
+        BACKEND_STACK_NAME = "${params.BACKEND_STACK_NAME}"
+        ENV = "${params.ENV}"
+        ACTION = "${params.ACTION}"
+        TF_IN_AUTOMATION = 'true'
+        STATE_KEY_PREFIX = 'security/aws-oidc-federation'
+        SELF_DIR = "project/${STATE_KEY_PREFIX}"
+        BACKEND_CONFIG_FILE = "${WORKSPACE}/config/backend.hcl"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Prepare Backend Config') {
+            steps {
+                script {
+                    def bucketName = sh(
+                            script: '''
+                            aws cloudformation describe-stacks \
+                                --profile "$AWS_PROFILE" \
+                                --region "$AWS_REGION" \
+                                --stack-name "$BACKEND_STACK_NAME" \
+                                --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+                                --output text
+                        ''',
+                            returnStdout: true
+                    ).trim()
+
+                    // The backend key is intentionally absent from versions.tf; it is injected here per ENV
+                    def backendContent = """\
+                        bucket       = "${bucketName}"
+                        key          = "${env.STATE_KEY_PREFIX}/${params.ENV}/terraform.tfstate"
+                        region       = "${params.AWS_REGION}"
+                        use_lockfile = true
+                        encrypt      = true
+                    """.stripIndent()
+
+                    writeFile file: env.BACKEND_CONFIG_FILE, text: backendContent
+
+                    echo "Generated ${env.BACKEND_CONFIG_FILE} with bucket: ${bucketName}"
+                }
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir("${env.SELF_DIR}") {
+                    sh 'terraform init -input=false -reconfigure -backend-config="$BACKEND_CONFIG_FILE"'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            steps {
+                dir("${env.SELF_DIR}") {
+                    sh 'terraform plan -input=false -var-file="${ENV}.tfvars" -out=tfplan'
+                }
+            }
+        }
+
+        stage('Terraform Plan Destroy') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                dir("${env.SELF_DIR}") {
+                    sh 'terraform plan -destroy -input=false -var-file="${ENV}.tfvars" -out=tfplan'
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                timeout(time: 60, unit: 'MINUTES') {
+                    // Jenkins lets Overall/Administer holders approve regardless of the submitter setting
+                    input message: "Terraform Plan の内容 (ENV: ${params.ENV} / ACTION: ${params.ACTION}) を確認しましたか？実行してよろしいですか？",
+                            ok: '実行する',
+                            submitter: 'admin'
+                }
+            }
+        }
+
+        stage('Confirm Destroy') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                timeout(time: 60, unit: 'MINUTES') {
+                    script {
+                        def confirmEnv = input(
+                                message: "OIDC フェデレーション (${params.ENV}) の destroy を実行しようとしています。続行するにはスロット名 \"${params.ENV}\" を入力してください。",
+                                ok: '確認',
+                                submitter: 'admin',
+                                parameters: [string(name: 'CONFIRM_ENV', defaultValue: '', description: 'スロット名を入力')]
+                        )
+                        if (confirmEnv != params.ENV) {
+                            error "確認入力がスロット名 \"${params.ENV}\" と一致しません。destroy を中断します。"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir("${env.SELF_DIR}") {
+                    sh 'terraform apply -input=false tfplan'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // tfplan may contain sensitive values
+            sh 'rm -f "$WORKSPACE/$SELF_DIR/tfplan"'
+        }
+    }
+}

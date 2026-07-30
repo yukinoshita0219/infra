@@ -129,11 +129,11 @@ resource "aws_iam_role_policy_attachment" "gcp_federated" {
 }
 
 resource "aws_iam_role_policy" "gcp_federated" {
-  for_each = { for k, v in var.gcp_to_aws_roles : k => v if v.inline_policy_json != null }
+  for_each = { for k, v in var.gcp_to_aws_roles : k => v if v.inline_policy != null }
 
   name   = "${var.system_name}-${var.env}-${each.key}"
   role   = local.gcp_to_aws_role_names[each.key]
-  policy = each.value.inline_policy_json
+  policy = jsonencode(each.value.inline_policy)
 }
 
 # ---------------------------------------------

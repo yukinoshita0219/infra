@@ -47,7 +47,7 @@ variable "gcp_to_aws_roles" {
     create_role                    = optional(bool, true)
     existing_role_name             = optional(string)
     managed_policy_arns            = optional(list(string), [])
-    inline_policy_json             = optional(string)
+    inline_policy                  = optional(any)
     max_session_duration           = optional(number, 3600)
     audiences                      = optional(list(string))
   }))
