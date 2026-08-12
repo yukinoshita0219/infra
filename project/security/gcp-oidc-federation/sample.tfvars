@@ -20,14 +20,6 @@ attribute_mapping = {
 # ここで組織・リポジトリまで絞り、SA 側の principalSet でさらに ref 等を絞る
 attribute_condition = "assertion.repository_owner == '<owner>' && assertion.repository == '<owner>/<repo>'"
 
-# 以下は default のままでよければ省略可
-# audiences            = []    # 空ならプロバイダ既定の audience のみ受け入れ (推奨)
-# create_pool          = true  # 既存プールにバインドだけ追加する場合は false
-# pool_id              = null  # 未指定なら <system_name>-<env>-pool
-# provider_id          = null  # 未指定なら <system_name>-<env>
-# existing_pool_id     = null  # create_pool = false の場合は必須
-# existing_provider_id = null
-
 # ---------------------------------------------
 # service_accounts: OIDC IdP からの impersonate を許可するサービスアカウント
 # キーが SA の account_id (6〜30文字)
@@ -71,3 +63,11 @@ direct_access = {
   #   project_roles = ["roles/artifactregistry.reader"]
   # }
 }
+
+# 以下は default のままでよければ省略可
+# audiences            = []    # 空ならプロバイダ既定の audience のみ受け入れ (推奨)
+# create_pool          = true  # 既存プールにバインドだけ追加する場合は false
+# pool_id              = null  # 未指定なら <system_name>-<env>-pool
+# provider_id          = null  # 未指定なら <system_name>-<env>
+# existing_pool_id     = null  # create_pool = false の場合は必須
+# existing_provider_id = null
