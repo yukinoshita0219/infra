@@ -80,7 +80,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v3
         with:
           # output workload_identity_pool_provider_name の値
           workload_identity_provider: projects/123456789/locations/global/workloadIdentityPools/app-github-pool/providers/app-github
