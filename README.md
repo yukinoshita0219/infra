@@ -23,7 +23,9 @@ infra/
     ├── queue/
     │   └── aws-sqs/                     # SQS queues
     ├── security/
-    │   └── gcp-aws-workload-identity/   # GCP <-> AWS workload identity federation
+    │   ├── aws-oidc-federation/         # External OIDC IdP -> AWS federation
+    │   ├── gcp-aws-workload-identity/   # GCP <-> AWS workload identity federation
+    │   └── gcp-oidc-federation/         # External OIDC IdP -> GCP federation
     ├── storage/
     │   └── gcp-cloud-storage/           # GCS buckets
     └── terraform-backend/               # Terraform state backend bootstrap (CloudFormation)
@@ -151,7 +153,9 @@ infra/
     ├── queue/
     │   └── aws-sqs/                     # SQS キュー
     ├── security/
-    │   └── gcp-aws-workload-identity/   # GCP ⇔ AWS Workload Identity 連携
+    │   ├── aws-oidc-federation/         # 外部 OIDC IdP → AWS 連携
+    │   ├── gcp-aws-workload-identity/   # GCP ⇔ AWS Workload Identity 連携
+    │   └── gcp-oidc-federation/         # 外部 OIDC IdP → GCP 連携
     ├── storage/
     │   └── gcp-cloud-storage/           # GCS バケット
     └── terraform-backend/               # Terraform ステートバックエンド構築 (CloudFormation)
